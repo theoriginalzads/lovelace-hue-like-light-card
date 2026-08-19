@@ -6,10 +6,61 @@ import { ClickAction, HueLikeLightCardConfigInterface, KnownIconSize, SceneOrder
 import { localize } from '../localize/localize';
 import { HaFormSchemaEntry, HaFormValueChangedDetail } from './ha-form-types';
 import { RawSceneEntry } from './hue-scenes-editor';
+import { HassWsClient } from '../core/hass-ws-client';
 import './hue-scenes-editor';
 import './hue-color-field';
 
 type EditorConfig = Omit<HueLikeLightCardConfigInterface, 'scenes'> & LovelaceCardConfig & { scenes?: RawSceneEntry[] };
+
+/** Special ColorExtended sentinel value (see color-extended.ts) that picks the color up from the active HA theme. */
+const THEME_COLOR = 'theme-color';
+
+/**
+ * Detects scene entities the same way the card itself does automatically (scenes from the areas
+ * of the configured lights), so the visual editor can seed the manual scene list with real entity ids.
+ */
+async function detectSceneEntityIds(hass: HomeAssistant, config: EditorConfig): Promise<string[]> {
+    const client = new HassWsClient(hass);
+
+    let lightEntityIds: string[] = [];
+    try {
+        if (config.area) {
+            const info = await client.getLightEntitiesFromArea(config.area);
+            lightEntityIds = info ? [...info.lights, ...info.switches] : [];
+        }
+        else if (config.floor) {
+            const info = await client.getLightEntitiesFromFloor(config.floor);
+            lightEntityIds = info ? [...info.lights, ...info.switches] : [];
+        }
+        else if (config.label) {
+            const info = await client.getLightEntitiesFromLabel(config.label);
+            lightEntityIds = info ? [...info.lights, ...info.switches] : [];
+        }
+        else {
+            const plain: string[] = [];
+            if (config.entity) plain.push(config.entity);
+            if (Array.isArray(config.entities)) {
+                config.entities.forEach(e => {
+                    if (typeof e === 'string') plain.push(e);
+                });
+            }
+            lightEntityIds = plain;
+        }
+
+        if (lightEntityIds.length === 0)
+            return [];
+
+        const areas = await Promise.all(lightEntityIds.map(id => client.getArea(id)));
+        const uniqueAreas = Array.from(new Set(areas.filter((a): a is string => !!a)));
+
+        const scenesPerArea = await Promise.all(uniqueAreas.map(area => client.getScenes(area)));
+        return Array.from(new Set(scenesPerArea.flat()));
+    }
+    catch (error) {
+        console.error('Could not detect scenes from areas.', error);
+        return [];
+    }
+}
 
 const FIELD_LABELS: Record<string, string> = {
     entity: 'Light entity',
@@ -156,6 +207,9 @@ export class HueLikeLightCardEditor extends LitElement implements LovelaceCardEd
     @state()
     private _config?: EditorConfig;
 
+    @state()
+    private _detectingScenes = false;
+
     /** Cache of the last non-empty manual scene list, so toggling auto-detect off/on doesn't lose edits. */
     private _lastManualScenes: RawSceneEntry[] = [];
 
@@ -182,6 +236,13 @@ export class HueLikeLightCardEditor extends LitElement implements LovelaceCardEd
         display: flex;
         flex-direction: column;
         gap: 16px;
+    }
+    .detect-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+        margin-bottom: 8px;
     }
     .entities-note {
         padding: 0 12px 12px;
@@ -238,12 +299,18 @@ export class HueLikeLightCardEditor extends LitElement implements LovelaceCardEd
                     .label=${FIELD_LABELS.offColor}
                     .helper=${'Color of the card when all lights are off.'}
                     .value=${this._config.offColor ?? ''}
+                    .themeColorValue=${THEME_COLOR}
+                    .themeColorLabel=${'Use theme color'}
+                    .fallbackValue=${Consts.OffColor}
                     @value-changed=${(ev: CustomEvent) => this.onColorChanged('offColor', ev)}
                 ></hue-color-field>
                 <hue-color-field
                     .label=${FIELD_LABELS.hueScreenBgColor}
                     .helper=${'Background color of the Hue screen pop-up.'}
                     .value=${this._config.hueScreenBgColor ?? ''}
+                    .themeColorValue=${THEME_COLOR}
+                    .themeColorLabel=${'Use theme color'}
+                    .fallbackValue=${Consts.DialogBgColor}
                     @value-changed=${(ev: CustomEvent) => this.onColorChanged('hueScreenBgColor', ev)}
                 ></hue-color-field>
             </div>
@@ -286,7 +353,14 @@ export class HueLikeLightCardEditor extends LitElement implements LovelaceCardEd
                         .computeHelper=${this.computeHelper}
                         @value-changed=${this.onFormChanged}
                     ></ha-form>`
-        : html`<hue-scenes-editor
+        : html`
+                    <div class="detect-row">
+                        <ha-button @click=${this.detectAndMergeScenes} .disabled=${this._detectingScenes}>
+                            ${this._detectingScenes ? 'Detecting scenes…' : 'Detect scenes from area'}
+                        </ha-button>
+                        <div class="entities-note">Looks up scenes from the areas of your configured lights and adds any that aren't already in the list below.</div>
+                    </div>
+                    <hue-scenes-editor
                         .hass=${this.hass}
                         .scenes=${manualScenes}
                         @value-changed=${this.onScenesChanged}
@@ -342,14 +416,43 @@ export class HueLikeLightCardEditor extends LitElement implements LovelaceCardEd
             // remember current manual list, then let scenes be auto-detected
             this._lastManualScenes = (this._config.scenes as RawSceneEntry[] | undefined) ?? [];
             delete config.scenes;
+            this._config = config as EditorConfig;
+            this.fireConfigChanged();
         }
         else {
             config.scenes = this._lastManualScenes;
-        }
+            this._config = config as EditorConfig;
+            this.fireConfigChanged();
 
-        this._config = config as EditorConfig;
-        this.fireConfigChanged();
+            // starting from an empty manual list - seed it with whatever is currently auto-detectable
+            if (this._lastManualScenes.length === 0) {
+                void this.detectAndMergeScenes();
+            }
+        }
     }
+
+    private detectAndMergeScenes = async (): Promise<void> => {
+        if (!this.hass || !this._config || this._detectingScenes)
+            return;
+
+        this._detectingScenes = true;
+        try {
+            const detected = await detectSceneEntityIds(this.hass, this._config);
+            if (!this._config)
+                return;
+
+            const existing = (this._config.scenes as RawSceneEntry[] | undefined) ?? [];
+            const existingIds = new Set(existing.map(e => typeof e === 'string' ? e : (e.entity as string)));
+            const merged = [...existing, ...detected.filter(id => !existingIds.has(id))];
+
+            this._lastManualScenes = merged;
+            this._config = { ...this._config, scenes: merged };
+            this.fireConfigChanged();
+        }
+        finally {
+            this._detectingScenes = false;
+        }
+    };
 
     private onScenesChanged(ev: CustomEvent): void {
         if (!this._config)

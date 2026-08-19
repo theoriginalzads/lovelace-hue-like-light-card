@@ -59,5 +59,6 @@ describe('Card', () => {
         const stub = HueLikeLightCard.getStubConfig(hassMockup);
 
         expect(stub.entity).toBe('light.test');
+        expect(stub.offColor).toBe('theme-color');
     });
 });

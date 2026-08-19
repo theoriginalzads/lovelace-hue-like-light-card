@@ -1,11 +1,14 @@
 import { fireEvent } from 'custom-card-helpers';
-import { css, html, LitElement } from 'lit';
+import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { Consts } from '../types/consts';
 
 /**
  * Text field for entering a card color (name, hex, rgb()/rgba() or the special
  * 'warm'/'cold' keywords), paired with a native color-swatch picker for convenience.
+ *
+ * Optionally supports a dedicated 'theme color' toggle for fields backed by ColorExtended
+ * (e.g. offColor, hueScreenBgColor), which recognize the special 'theme-color' sentinel value.
  */
 @customElement('hue-color-field')
 export class HueColorField extends LitElement {
@@ -18,11 +21,27 @@ export class HueColorField extends LitElement {
     @property()
     public value = '';
 
+    /** When set, shows a 'Use theme color' toggle that switches value to/from this exact sentinel value. */
+    @property()
+    public themeColorValue?: string;
+
+    @property()
+    public themeColorLabel = 'Use theme color';
+
+    /** Value to fall back to when switching off theme-color mode. */
+    @property()
+    public fallbackValue = '';
+
     public static override styles = css`
     .row {
         display: flex;
         align-items: center;
         gap: 8px;
+    }
+    .theme-toggle {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
     }
     ha-textfield {
         flex-grow: 1;
@@ -39,23 +58,39 @@ export class HueColorField extends LitElement {
     }
     `;
 
+    private get usingThemeColor(): boolean {
+        return !!this.themeColorValue && this.value === this.themeColorValue;
+    }
+
     protected override render() {
         return html`
-        <div class="row">
-            <ha-textfield
-                .label=${this.label}
-                .helper=${this.helper}
-                helperPersistent
-                .value=${this.value}
-                @change=${this.onTextChanged}
-            ></ha-textfield>
-            <input
-                type="color"
-                title=${this.label}
-                .value=${HueColorField.resolveHex(this.value)}
-                @change=${this.onSwatchChanged}
-            />
-        </div>
+        ${this.themeColorValue
+        ? html`<div class="theme-toggle">
+                <ha-formfield .label=${this.themeColorLabel}>
+                    <ha-switch
+                        .checked=${this.usingThemeColor}
+                        @change=${this.onThemeToggle}
+                    ></ha-switch>
+                </ha-formfield>
+            </div>`
+        : nothing}
+        ${this.usingThemeColor
+        ? nothing
+        : html`<div class="row">
+                <ha-textfield
+                    .label=${this.label}
+                    .helper=${this.helper}
+                    helperPersistent
+                    .value=${this.value}
+                    @change=${this.onTextChanged}
+                ></ha-textfield>
+                <input
+                    type="color"
+                    title=${this.label}
+                    .value=${HueColorField.resolveHex(this.value)}
+                    @change=${this.onSwatchChanged}
+                />
+            </div>`}
         `;
     }
 
@@ -67,6 +102,13 @@ export class HueColorField extends LitElement {
 
     private onSwatchChanged(ev: Event): void {
         const value = (ev.target as HTMLInputElement).value;
+        this.value = value;
+        fireEvent(this, 'value-changed', { value });
+    }
+
+    private onThemeToggle(ev: Event): void {
+        const checked = (ev.target as HTMLInputElement).checked;
+        const value = checked ? this.themeColorValue! : this.fallbackValue;
         this.value = value;
         fireEvent(this, 'value-changed', { value });
     }

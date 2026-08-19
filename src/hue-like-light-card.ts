@@ -215,7 +215,9 @@ export class HueLikeLightCard extends IdLitElement implements LovelaceCard {
         const lightEntityId = Object.keys(hass.states).find(id => id.startsWith('light.'));
 
         return {
-            entity: lightEntityId
+            entity: lightEntityId,
+            // pick up the off-state color from the active HA theme, rather than a fixed gray
+            offColor: 'theme-color'
         };
     }
 

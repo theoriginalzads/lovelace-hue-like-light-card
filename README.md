@@ -1,4 +1,4 @@
-This is a fork of https://github.com/maxwroc/battery-state-card trying to add a UI to it. I'd suggest downloading the original and not the clone. 
+This is a fork of another card trying to add a UI to it. I'd suggest downloading the original and not the clone. 
 
 
 # Hue-Like Light Card for Home Assistant
@@ -28,6 +28,9 @@ For more options see [Configuration](#configuration) or let yourself inspire in 
 This card has a graphical configuration editor - when adding or editing the card in a Home Assistant dashboard, use the "Show visual editor" option (instead of "Show code editor / Edit in YAML") to configure it without writing YAML.
 
 The visual editor covers all common options (light targeting, appearance, colors, click/hold actions and scenes), including full control over the [scenes](#scenes-configuration) shown in the [Hue screen](#hue-screen) pop-up - you can add/remove/reorder scenes and customize each scene's title, icon, accent color and **visibility**.
+
+- **Colors**: `offColor` and `hueScreenBgColor` have a "Use theme color" toggle in the editor, which sets the [`theme-color`](#colorextended) keyword so the card matches your active Home Assistant theme instead of a fixed color. Cards added through the UI card picker default to this.
+- **Scenes**: when you switch off "Auto-detect scenes" to customize scenes manually, the editor automatically looks up the scenes already available for your configured lights' areas (the same detection the card does automatically) and adds them to the list for you - you don't need to already know the scene entity IDs. A "Detect scenes from area" button lets you re-run this lookup at any time to pull in newly added scenes without disturbing your existing customizations.
 
 A few advanced/rarely used options (per-entity `title`/`icon` overrides inside `entities`, a scene's custom `activation` service and `activationData`) are only editable in YAML - use the "Edit in YAML" option (⋮ menu on the card, while editing) for those. Anything set that way is preserved when switching back to the visual editor.
 
