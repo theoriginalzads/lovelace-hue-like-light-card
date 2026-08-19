@@ -82,8 +82,21 @@ export class SceneConfig {
     public color?: string;
     // TODO: add posibility to set color gradient
 
+    /**
+     * Whether this scene should be shown in the Hue screen.
+     * Defaults to true, when not set.
+     */
+    public visible?: boolean;
+
     public activation?: string;
     public activationData?: Record<string, unknown>;
+
+    /**
+     * @returns whether this scene should be shown (defaults to true, when not explicitly hidden).
+     */
+    public get isVisible(): boolean {
+        return this.visible !== false;
+    }
 
     public getActivationService() {
         const defaultService = 'scene.turn_on';

@@ -272,6 +272,7 @@ export class HueLikeLightCardConfig extends HueLikeLightCardEntityConfig impleme
         result.title = plain.title;
         result.icon = plain.icon;
         result.color = plain.color;
+        result.visible = plain.visible;
         result.activation = plain.activation;
         result.activationData = plain.activationData;
 

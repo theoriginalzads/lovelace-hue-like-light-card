@@ -46,4 +46,18 @@ describe('Card', () => {
         // eslint-disable-next-line @typescript-eslint/dot-notation
         expect(card['_config']?.card_mod).toBe(s);
     });
+
+    it('provides a config element (visual editor)', () => {
+        const editor = HueLikeLightCard.getConfigElement();
+
+        expect(editor).toBeTruthy();
+        expect(editor.tagName.toLowerCase()).toBe(Consts.CardEditorElementName);
+        expect(typeof editor.setConfig).toBe('function');
+    });
+
+    it('provides a stub config', () => {
+        const stub = HueLikeLightCard.getStubConfig(hassMockup);
+
+        expect(stub.entity).toBe('light.test');
+    });
 });

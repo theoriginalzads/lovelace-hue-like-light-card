@@ -22,6 +22,15 @@ Where **livingroom_color** is the [entity](https://www.home-assistant.io/getting
 
 For more options see [Configuration](#configuration) or let yourself inspire in [Examples of configuration](#examples-of-configuration)
 
+### Visual editor
+*Since version 1.12.0*
+
+This card has a graphical configuration editor - when adding or editing the card in a Home Assistant dashboard, use the "Show visual editor" option (instead of "Show code editor / Edit in YAML") to configure it without writing YAML.
+
+The visual editor covers all common options (light targeting, appearance, colors, click/hold actions and scenes), including full control over the [scenes](#scenes-configuration) shown in the [Hue screen](#hue-screen) pop-up - you can add/remove/reorder scenes and customize each scene's title, icon, accent color and **visibility**.
+
+A few advanced/rarely used options (per-entity `title`/`icon` overrides inside `entities`, a scene's custom `activation` service and `activationData`) are only editable in YAML - use the "Edit in YAML" option (⋮ menu on the card, while editing) for those. Anything set that way is preserved when switching back to the visual editor.
+
 ### Hue icons
 For the best experience use with [hass-hue-icons](https://github.com/arallsopp/hass-hue-icons).
 You can then use icons you are used to (from Philips Hue app).
@@ -764,6 +773,14 @@ If you want to hide scenes completely, you can set the option to empty list <cod
     <td>Accent color current scene (shown on scene-button)</td>
   </tr>
   <tr>
+    <td><code>visible</code></td>
+    <td>boolean</td>
+    <td>no</td>
+    <td>1.12.0</td>
+    <td><code>true</code></td>
+    <td>When set to <code>false</code>, this scene is hidden from the <a href="#hue-screen">Hue screen</a> (without removing its configuration).</td>
+  </tr>
+  <tr>
     <td><code>activation</code></td>
     <td><a href="https://www.home-assistant.io/docs/scripts/service-calls/">Service name</a></td>
     <td>no</td>
@@ -805,6 +822,10 @@ scenes:
   - entity: scene.colors_white
     color: white
     icon: ''                        # when you don't want the icon, you can set it to empty string
+  - entity: scene.colors_movie
+    color: darkslateblue
+    icon: mdi:movie-open
+    visible: false                  # this scene stays configured, but is hidden from the Hue screen
 ```
 For the best experience, please fill in both `icon` and `color` for all scenes.
 

@@ -688,7 +688,7 @@ export class HueDialog extends IdLitElement {
         const sceneTiles: ({ kind: 'scene', config: SceneConfig } | { kind: 'preset', config: PresetConfig })[] = [];
         this._config.sceneProvider.forEach(provider => {
             if (provider == SceneProvider.HaScenes) {
-                sceneTiles.push(...this._config.scenes.map(sceneConfig => ({ kind: 'scene' as const, config: sceneConfig })));
+                sceneTiles.push(...this._config.scenes.filter(sceneConfig => sceneConfig.isVisible).map(sceneConfig => ({ kind: 'scene' as const, config: sceneConfig })));
             }
             else if (provider == SceneProvider.ScenePresets) {
                 sceneTiles.push(...this._config.presets.map(presetConfig => ({ kind: 'preset' as const, config: presetConfig })));

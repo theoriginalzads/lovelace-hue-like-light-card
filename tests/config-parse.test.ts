@@ -88,4 +88,57 @@ describe('Config parse', () => {
             new HueLikeLightCardConfig(cTyped);
         }).toThrow();
     });
+
+    // Scene visibility
+    it('parse scene visible defaults to true (string scene)', () => {
+        const config = new HueLikeLightCardConfig({
+            entity: 'light.test',
+            scenes: ['scene.test']
+        });
+
+        expect(config.scenes[0].visible).toBeUndefined();
+        expect(config.scenes[0].isVisible).toBe(true);
+    });
+
+    it('parse scene visible defaults to true (object scene without visible)', () => {
+        const c = {
+            entity: 'light.test',
+            scenes: [{ entity: 'scene.test' }]
+        };
+        const config = new HueLikeLightCardConfig((c as unknown) as HueLikeLightCardConfigInterface);
+
+        expect(config.scenes[0].isVisible).toBe(true);
+    });
+
+    it('parse scene visible false', () => {
+        const c = {
+            entity: 'light.test',
+            scenes: [{ entity: 'scene.test', visible: false }]
+        };
+        const config = new HueLikeLightCardConfig((c as unknown) as HueLikeLightCardConfigInterface);
+
+        expect(config.scenes[0].visible).toBe(false);
+        expect(config.scenes[0].isVisible).toBe(false);
+    });
+
+    it('parse scene visible true', () => {
+        const c = {
+            entity: 'light.test',
+            scenes: [{ entity: 'scene.test', visible: true }]
+        };
+        const config = new HueLikeLightCardConfig((c as unknown) as HueLikeLightCardConfigInterface);
+
+        expect(config.scenes[0].isVisible).toBe(true);
+    });
+
+    it('parse scene icon and color', () => {
+        const c = {
+            entity: 'light.test',
+            scenes: [{ entity: 'scene.test', icon: 'mdi:tree-outline', color: 'cyan' }]
+        };
+        const config = new HueLikeLightCardConfig((c as unknown) as HueLikeLightCardConfigInterface);
+
+        expect(config.scenes[0].icon).toBe('mdi:tree-outline');
+        expect(config.scenes[0].color).toBe('cyan');
+    });
 });

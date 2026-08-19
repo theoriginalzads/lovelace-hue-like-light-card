@@ -1,4 +1,4 @@
-import { LovelaceCard, HomeAssistant, LovelaceCardConfig } from 'custom-card-helpers';
+import { LovelaceCard, LovelaceCardEditor, HomeAssistant, LovelaceCardConfig } from 'custom-card-helpers';
 import { css, html, nothing, unsafeCSS, PropertyValues } from 'lit';
 import { classMap } from 'lit-html/directives/class-map.js';
 import { customElement } from 'lit/decorators.js';
@@ -21,6 +21,7 @@ import { IdLitElement } from './core/id-lit-element';
 import { HueApiProvider } from './core/api-provider';
 import { ICardApi } from './types/types-api';
 import { LimitedTimeout } from './core/limited-timeout';
+import './editor/hue-like-light-card-editor';
 
 // Show version info in console
 VersionNotifier.toConsole();
@@ -198,6 +199,24 @@ export class HueLikeLightCard extends IdLitElement implements LovelaceCard {
     // distribute all cards over the available columns.
     public getCardSize(): number {
         return 3;
+    }
+
+    /**
+     * Enables the graphical configuration editor for this card in the HA dashboard UI.
+     */
+    public static getConfigElement(): LovelaceCardEditor {
+        return document.createElement(Consts.CardEditorElementName) as unknown as LovelaceCardEditor;
+    }
+
+    /**
+     * @returns a minimal starter configuration used when this card is added through the UI card picker.
+     */
+    public static getStubConfig(hass: HomeAssistant): HueLikeLightCardConfigInterface {
+        const lightEntityId = Object.keys(hass.states).find(id => id.startsWith('light.'));
+
+        return {
+            entity: lightEntityId
+        };
     }
 
     private cardClicked(): void {
