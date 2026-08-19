@@ -87,20 +87,48 @@ export class HueScenesEditor extends LitElement {
         min-width: 0;
         gap: 4px;
     }
+    .scene-name {
+        font-size: 14px;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .scene-entity-id {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        font-family: monospace;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
     .scene-main .fields {
         display: flex;
         gap: 8px;
+        align-items: flex-start;
+    }
+    .field-block {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-width: 0;
+        gap: 4px;
+    }
+    .field-block.icon-block {
+        flex-grow: 0;
+        flex-shrink: 0;
+        width: 130px;
+    }
+    .field-block .field-label {
+        font-size: 12px;
+        color: var(--secondary-text-color);
     }
     ha-textfield {
-        flex-grow: 1;
+        width: 100%;
     }
     hue-color-field {
         flex-grow: 1;
         min-width: 160px;
-    }
-    ha-icon-picker {
-        width: 130px;
-        flex-shrink: 0;
     }
     .reorder-buttons {
         display: flex;
@@ -171,25 +199,29 @@ export class HueScenesEditor extends LitElement {
                     @click=${() => this.move(index, 1)}
                 ></ha-icon-button>
             </div>
-            <ha-icon-picker
-                .hass=${this.hass}
-                .value=${row.icon ?? ''}
-                .label=${localize(this.hass!, 'editor.scenes.iconLabel')}
-                @value-changed=${(ev: CustomEvent) => this.updateRow(index, { icon: ev.detail.value || undefined })}
-            ></ha-icon-picker>
+            <div class="field-block icon-block">
+                <div class="field-label">${localize(this.hass!, 'editor.scenes.iconLabel')}</div>
+                <ha-icon-picker
+                    .hass=${this.hass}
+                    .value=${row.icon ?? ''}
+                    @value-changed=${(ev: CustomEvent) => this.onFieldValueChanged(ev, index, 'icon')}
+                ></ha-icon-picker>
+            </div>
             <div class="scene-main">
+                <div class="scene-name">${this.getSceneName(row.entity)}</div>
+                <div class="scene-entity-id">${row.entity}</div>
                 <div class="fields">
-                    <ha-textfield
-                        .label=${row.entity}
-                        .helper=${localize(this.hass!, 'editor.scenes.titleHelper')}
-                        helperPersistent
-                        .value=${row.title ?? ''}
-                        @change=${(ev: Event) => this.updateRow(index, { title: (ev.target as HTMLInputElement).value || undefined })}
-                    ></ha-textfield>
+                    <div class="field-block">
+                        <div class="field-label">${localize(this.hass!, 'editor.scenes.titleHelper')}</div>
+                        <ha-textfield
+                            .value=${row.title ?? ''}
+                            @change=${(ev: Event) => this.onTitleChanged(ev, index)}
+                        ></ha-textfield>
+                    </div>
                     <hue-color-field
                         .label=${localize(this.hass!, 'editor.scenes.colorLabel')}
                         .value=${row.color ?? ''}
-                        @value-changed=${(ev: CustomEvent) => this.updateRow(index, { color: ev.detail.value || undefined })}
+                        @value-changed=${(ev: CustomEvent) => this.onFieldValueChanged(ev, index, 'color')}
                     ></hue-color-field>
                 </div>
                 ${row.hasAdvancedActivation
@@ -212,7 +244,14 @@ export class HueScenesEditor extends LitElement {
         `;
     }
 
+    private getSceneName(entityId: string): string {
+        const friendlyName = this.hass?.states[entityId]?.attributes?.friendly_name as string | undefined;
+        return friendlyName || entityId;
+    }
+
     private onAddEntityChanged(ev: CustomEvent): void {
+        ev.stopPropagation();
+
         const entity = ev.detail.value as string;
         if (!entity)
             return;
@@ -226,6 +265,18 @@ export class HueScenesEditor extends LitElement {
         rows.push({ entity, hasAdvancedActivation: false });
         this._newEntity = '';
         this.emitChange(rows);
+    }
+
+    private onTitleChanged(ev: Event, index: number): void {
+        ev.stopPropagation();
+        const value = (ev.target as HTMLInputElement).value;
+        this.updateRow(index, { title: value || undefined });
+    }
+
+    private onFieldValueChanged(ev: CustomEvent, index: number, field: 'icon' | 'color'): void {
+        ev.stopPropagation();
+        const value = ev.detail.value as string;
+        this.updateRow(index, { [field]: value || undefined });
     }
 
     private updateRow(index: number, patch: Partial<EditableScene>): void {

@@ -397,6 +397,7 @@ export class HueLikeLightCardEditor extends LitElement implements LovelaceCardEd
     }
 
     private onColorChanged(key: 'defaultColor' | 'offColor' | 'hueScreenBgColor', ev: CustomEvent): void {
+        ev.stopPropagation();
         if (!this._config)
             return;
 
@@ -406,6 +407,7 @@ export class HueLikeLightCardEditor extends LitElement implements LovelaceCardEd
     }
 
     private onAutoDetectScenesChanged(ev: Event): void {
+        ev.stopPropagation();
         if (!this._config)
             return;
 
@@ -455,6 +457,7 @@ export class HueLikeLightCardEditor extends LitElement implements LovelaceCardEd
     };
 
     private onScenesChanged(ev: CustomEvent): void {
+        ev.stopPropagation();
         if (!this._config)
             return;
 

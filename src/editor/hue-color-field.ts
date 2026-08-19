@@ -33,6 +33,19 @@ export class HueColorField extends LitElement {
     public fallbackValue = '';
 
     public static override styles = css`
+    :host {
+        display: block;
+    }
+    .field-label {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+    .field-helper {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+    }
     .row {
         display: flex;
         align-items: center;
@@ -64,6 +77,7 @@ export class HueColorField extends LitElement {
 
     protected override render() {
         return html`
+        ${this.label ? html`<div class="field-label">${this.label}</div>` : nothing}
         ${this.themeColorValue
         ? html`<div class="theme-toggle">
                 <ha-formfield .label=${this.themeColorLabel}>
@@ -76,21 +90,21 @@ export class HueColorField extends LitElement {
         : nothing}
         ${this.usingThemeColor
         ? nothing
-        : html`<div class="row">
-                <ha-textfield
-                    .label=${this.label}
-                    .helper=${this.helper}
-                    helperPersistent
-                    .value=${this.value}
-                    @change=${this.onTextChanged}
-                ></ha-textfield>
-                <input
-                    type="color"
-                    title=${this.label}
-                    .value=${HueColorField.resolveHex(this.value)}
-                    @change=${this.onSwatchChanged}
-                />
-            </div>`}
+        : html`
+                ${this.helper ? html`<div class="field-helper">${this.helper}</div>` : nothing}
+                <div class="row">
+                    <ha-textfield
+                        .value=${this.value}
+                        placeholder="#rrggbb, rgb(...), a color name, 'warm' or 'cold'"
+                        @change=${this.onTextChanged}
+                    ></ha-textfield>
+                    <input
+                        type="color"
+                        title=${this.label}
+                        .value=${HueColorField.resolveHex(this.value)}
+                        @change=${this.onSwatchChanged}
+                    />
+                </div>`}
         `;
     }
 
