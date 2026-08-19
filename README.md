@@ -1,4 +1,4 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration) [![Tests](https://github.com/Gh61/lovelace-hue-like-light-card/actions/workflows/validation.yml/badge.svg)](https://github.com/Gh61/lovelace-hue-like-light-card/actions/workflows/validation.yml) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/paygh61/) ![Downloads](https://img.shields.io/github/downloads/Gh61/lovelace-hue-like-light-card/total.svg)
+This is a fork of https://github.com/maxwroc/battery-state-card trying to add a UI to it. I'd suggest downloading the original and not the clone. 
 
 
 # Hue-Like Light Card for Home Assistant
